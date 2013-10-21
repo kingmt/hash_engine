@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.name        = "hash_engine"
   s.version     = HashEngine::VERSION
   s.authors     = ["Michael King"]
-  s.email       = ["mking@enova.com"]
+  s.email       = ["kingmt@gmail.com"]
   s.homepage    = ""
   s.summary     = %q{HashEngine converts input data and intructions into output data.}
   s.description = %q{HashEngine converts input data, including a hash, csv string, or objects, using provided instructions into an output hash.}
