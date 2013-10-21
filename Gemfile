@@ -2,7 +2,7 @@ source "http://rubygems.org"
 
 group :test, :development do
   gem "rake"
-  gem "bundler_geminabox"
   gem 'rspec'
-  gem 'ZenTest'
+  gem 'guard'
+  gem 'guard-rspec'
 end
