@@ -34,7 +34,15 @@ module HashEngine
     @@formats['no_whitespace'] = Proc.new {|data| data.to_s.gsub(/[^A-Za-z0-9-]/,'') }
     @@formats['numeric'] = Proc.new {|data| data.to_s.gsub(/\D/,'') }
     @@formats['string'] = Proc.new {|data| data.to_s.strip }
+
+    # 1.8.7 behavior
     @@formats['first'] = Proc.new {|data| /\w/u.match(data.to_s).to_s }
+
+    # 1.9.x behavior
+    if RUBY_VERSION > "1.9"
+      @@formats['first'] = Proc.new {|data| data.to_s[0] }
+    end
+
     @@formats['float'] = Proc.new {|data| data.to_f }
     @@formats['upcase'] = Proc.new {|data| data.to_s.upcase }
     @@formats['downcase'] = Proc.new {|data| data.to_s.downcase }
