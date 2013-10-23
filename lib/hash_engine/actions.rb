@@ -57,7 +57,14 @@ module HashEngine
 
     @@actions['join'] = Proc.new {|data, sep| data.is_a?(Array) ? data.join(sep) : data }
     @@actions['first_value'] = Proc.new { |data, first| data.is_a?(Array) ? data.detect {|f| !(f.nil? || f.empty?)} : data }
-    @@actions['max_length'] = Proc.new {|data, length| data.to_s.slice(0, length.to_i) }
+
+    # 1.8.7 behavior
+    @@actions['max_length'] = Proc.new {|data, length| /\w/u.match(data.to_s).to_s }
+    # 1.9.x behavior
+    if RUBY_VERSION > "1.9"
+      @@actions['max_length'] = Proc.new {|data, length| data.to_s.slice(0, length.to_i) }
+    end
+
     @@actions['format'] = Proc.new do |data, format_instructions|
       # puts "      Formatting data: #{data} with #{format_instructions}"
       if format_instructions.is_a?(Hash) &&
