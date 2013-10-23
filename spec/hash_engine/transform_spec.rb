@@ -248,50 +248,50 @@ EOYAML
   end
 
   describe 'transformation' do
-    before :each do
-      @data = {'vendor_status' => 'ok',
-               'vendor_payload' => 'http://www.domain.com',
-               'vendor_uuid' => '1234ABCD'}
+    let(:data) do
+      {'vendor_status' => 'ok',
+       'vendor_payload' => 'http://www.domain.com',
+       'vendor_uuid' => '1234ABCD'}
     end
 
     it 'trivial case' do
-      @yaml =<<EOYAML
+      yaml =<<EOYAML
 fields:
   payload: vendor_payload
 EOYAML
-      @instructions = YAML.load @yaml
-      @results = HashEngine.transform(@data, @instructions)
-      @results[:error].should be_empty
-      @results['payload'].should == 'http://www.domain.com'
+      instructions = YAML.load yaml
+      results = HashEngine.transform(data, instructions)
+      results[:error].should be_empty
+      results['payload'].should == 'http://www.domain.com'
     end
 
     it 'simple case' do
-      @yaml =<<EOYAML
+      yaml =<<EOYAML
 fields:
   payload:
     input: vendor_payload
 EOYAML
-      @instructions = YAML.load @yaml
-      @results = HashEngine.transform(@data, @instructions)
-      @results[:error].should be_empty
-      @results['payload'].should == 'http://www.domain.com'
+      instructions = YAML.load yaml
+      results = HashEngine.transform(data, instructions)
+      results[:error].should be_empty
+      results['payload'].should == 'http://www.domain.com'
     end
 
     it 'simple formatting' do
-      @yaml =<<EOYAML
+      yaml =<<EOYAML
 fields:
   uuid:
     input: vendor_uuid
     format: numeric
 EOYAML
-      @instructions = YAML.load @yaml
-      @results = HashEngine.transform(@data, @instructions)
-      @results[:error].should be_empty
-      @results['uuid'].should == '1234'
+      instructions = YAML.load yaml
+      results = HashEngine.transform(data, instructions)
+      results[:error].should be_empty
+      results['uuid'].should == '1234'
     end
 
     it 'lookup map case' do
-      @yaml =<<EOYAML
+      yaml =<<EOYAML
 fields:
   status:
     input: vendor_status
@@ -300,14 +300,14 @@ fields:
       decline: reject
       default: error
 EOYAML
-      @instructions = YAML.load @yaml
-      @results = HashEngine.transform(@data, @instructions)
-      @results[:error].should be_empty
-      @results['status'].should == 'accepted'
+      instructions = YAML.load yaml
+      results = HashEngine.transform(data, instructions)
+      results[:error].should be_empty
+      results['status'].should == 'accepted'
     end
 
     it 'copied source case' do
-      @yaml =<<EOYAML
+      yaml =<<EOYAML
 copy_source: true
 fields:
   status:
