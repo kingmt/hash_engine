@@ -1,3 +1,4 @@
+# encoding: utf-8
 require 'hash_engine'
 
 describe HashEngine do
@@ -111,6 +112,10 @@ describe HashEngine do
         HashEngine.action('join', ', ', ['foo', 'bar']).should == 'foo, bar'
       end
 
+      it 'returns data elements with an included nil joined by specified seperator' do
+        HashEngine.action('join', ', ', [nil, 'bar']).should == ', bar'
+      end
+
       it 'returns data if data is not an array' do
         HashEngine.action('join', ', ', 'foo').should == 'foo'
       end
@@ -131,6 +136,10 @@ describe HashEngine do
 
       it 'trims a number when longer than length' do
         HashEngine.action('max_length', 5, 123456789).should == '12345'
+      end
+
+      it 'trims unicode string when longer than length' do
+        HashEngine.action('max_length', 3, 'ÑAlaman').should == 'ÑAl'
       end
     end
   end
