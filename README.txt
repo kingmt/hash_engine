@@ -1,6 +1,7 @@
 = hash_engine
 
 HashEngine is designed to operate on inputs given a hash of instructions to genetate an output hash
+HashEngine is compatible with Ruby versions 1.8.7, 1.9, and 2.0, mostly because I have a legacy project still on 1.8.7.
 
 The primary manipulations HashEngin is capable of are:
 * Transform => given a hash and instructions generate an output hash
@@ -9,21 +10,121 @@ The primary manipulations HashEngin is capable of are:
 
 HashEngine has several functions built in which will be covered below, however HashEngine was designed with extensability and customizability in mind. You can add your own functions and/or remove some of the built in functions.
 
-There are two main classes of instructions for HashEngine, fetchers and actions. Fetchers are instructions to 'fetch' data. Actions are instructions which 'act' on previously fetched data. A majority of tranformations involve only one fetcher and action, but can specify multiple instructions.
+There are two main classes of instructions for HashEngine, fetchers and actions.
+  Fetchers are instructions to 'fetch' data.
+  Actions are instructions which 'act' on previously fetched data.
+  A majority of tranformations involve only one fetcher and action, but can specify multiple instructions.
+
+  1.8.7 vs 1.9 and 2.0
+    Since hashes in 1.8.7 do not remembering insert order all instruction chaining needs to be specified as array elements.
+    The exception being a single fetcher followed by a single action, which can be specified as an array.
 
 == Fetchers
-The three main fetchers are:
+The defined fetchers are:
 * literal
 * input
 * data
+* subgroup_input
+* conditional_input
+
+The data that has been fetched will be accumulated and passed into the following action
+For all examples below assume the data passed in is:
+--
+  data_key_1: data_value_1
+  data_key_2: data_value_2
+  data_key_3: data_value_3
+  data_key_4: data_value_4
+  data_key_5: data_value_5
+
+* * literal -- used to specify literal or constant values
+    YAML examples:
+    output_1:
+      literal: foo
+    output_2:
+      literal: ''
+* * input -- used to specify the key of the data hash to be used
+    YAML example:
+    output_1:
+      input: data_key_1
+* * data -- used to specify multiple keys of the data hash to be used
+    YAML example:
+    output_1:
+      data:
+        - data_key_1
+        - data_key_2
+      join: ', '
+      Result would be => data_value_1, data_value_2
+* * subgroup_input -- used when some data needs to be acted upon before being used as an input, all defined fetchers and actions can be used. Technically you could define a highly nested structure, but it is not recomended.
+    YAML example:
+    output_1:
+      - subgroup:
+          data:
+            - data_key_1
+            - data_key_2
+          join: ', '
+      - input: data_key_3
+      - join: '#'
+      Result would be => data_value_1, data_value_2#data_value_3
+* * conditional_input -- variant of subgroup_input where conditional logic is applied to the data, the equivalent Ruby code would be:
+                         if left_operand operator right_operand
+                           true_instructions
+                         else
+                           false_instructions
+
+    -- The structure of this fetcher is a bit different
+       There must be a fetcher specified for the
+    * * left_operand and right_operand can be any valid fetcher
+    * * operators
+        eq => equal
+        ne => not equal
+        lt => less than
+        gt => greater than
+        lteq => less than or equal to
+        gteq => greater than or equal to
+        exist => exists
+    * * true_instructions and false_instructions can be any valid combination of fetchers and actions
+    YAML example:
+    output_1:
+      - conditional_input:
+          left_operand:
+            input: data_key_1
+          operator: exist
+          true:
+            input: data_key_2
+          false:
+            input: data_key_3
+      - input: data_key_3
+      - join: '#'
+      When data_value_1 exists the result would be => data_value_2#data_value_3
+      When data_value_1 doesn't exist the result would be => data_value_3#data_value_3
+    output_2:
+      conditional_input:
+        left_operand
+          input: data_key_1
+        operator: eq
+        right_operand:
+          input: data_key_4
+        true_instructions:
+          data:
+            - data_key_2
+            - data_key_3
+          join: '#'
+        false_instructions:
+          data:
+            - data_key_1
+            - data_key_4
+          join: '#'
+      When data_value_1 is the same as data_value_4 the result would be => data_value_2#data_value_3
+      When data_value_1 is not the same as data_value_4 the result would be => data_value_1#data_value_4
+
+
+
 
 == Actions
 The main actions are:
 * lookup_map
 * first_value
 * join
-* proc
-* unprotected_proc
 * max_length
 * format
 
@@ -77,7 +178,31 @@ Input Data Type:
          default_to_key: true
   and the source data => {'foo' => 'z', 'bar' => 'z', 'baz' => 'z'}
     the output will be {'output_field_1 => nil
-  
+
+* first_value => find the first non-nil value
+    YAML example:
+    output_1:
+      data:
+        - data_key_1
+        - data_key_2
+      join: ', '
+      When data_value_1 exists the result would be => data_value_1
+      When data_value_1 doesn't exist the result would be => data_value_2
+* join => join all the data using the specified string
+    YAML example:
+    output_1:
+      data:
+        - data_key_1
+        - data_key_2
+      join: ', '
+      Result would be => data_value_1, data_value_2
+* max_length => cut the output down to the size specified
+    YAML example:
+    output_1:
+      input: data_key_1
+      max_length: 8
+      Result would be => data_val
+
 * strtfmt: <pattern>
   This will call strfmt using the supplied pattern on the value if the value responds to strfmt
 * format: <sub-action>
@@ -166,11 +291,11 @@ To add a new format using a block do:
   HashEngine.register_format_block('float') {|data| data.to_f}
 
 To add a new format using a hash do:
-  i_hash = Hash.new {|hash, key| key.to_i } 
+  i_hash = Hash.new {|hash, key| key.to_i }
   i_hash[true]  = 1
   i_hash[false] = 0
-  i_hash[nil]   = 0 
-  HashEngine.register_format_hash('integer', i_hash) 
+  i_hash[nil]   = 0
+  HashEngine.register_format_hash('integer', i_hash)
 
 To change a format, simply register the new format.
 To delete a format use:
@@ -178,7 +303,7 @@ To delete a format use:
 
 
 == Contributing to hash_engine
- 
+
 * Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet
 * Check out the issue tracker to make sure someone already hasn't requested it and/or contributed it
 * Fork the project
