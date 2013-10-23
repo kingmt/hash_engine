@@ -111,9 +111,14 @@ module HashEngine
     def simple_instructions(field_name, field_hash, source_data, error_array)
       instructions = []
       field_hash.each_pair do |key, value|
-        if valid_fetcher?(key)
+        case
+        when key == 'conditional_eval'
           instructions.unshift(key => value)
-        elsif valid_action?(key)
+        when key == 'subgroup'
+          instructions.unshift(key => value)
+        when valid_fetcher?(key)
+          instructions.unshift(key => value)
+        when valid_action?(key)
           instructions.push(key => value)
         else
           add_error(error_array, "Invalid operation '#{key.inspect}' in transform for field '#{field_name}'", field_name)
@@ -137,15 +142,36 @@ module HashEngine
       end
     end
 
+    def conditional_eval(field_name, instructions, source_data, error_array)
+      left_operand = get_value("#{field_name}_conditional_eval_left_operand",
+                               instructions['left_operand'], source_data, error_array)
+      right_operand = get_value("#{field_name}_conditional_eval_right_operand",
+                                instructions['right_operand'], source_data, error_array)
+      if conditional(instructions['operator'], left_operand, right_operand)
+        get_value("#{field_name}_conditional_eval_true_instructions",
+                  instructions['true_instructions'], source_data, error_array)
+      else
+        get_value("#{field_name}_conditional_eval_false_instructions",
+                  instructions['false_instructions'], source_data, error_array)
+      end
+    end
+
     def process_instructions(field_name, instruction_array, source_data, error_array)
       data = nil
       instruction_array.each do |instruction_hash|
         (instruction, instruction_data) = instruction_hash.first
         # puts "  Evaluating instruction: #{instruction} with instruction_data: #{instruction_data}"
-        if valid_fetcher?(instruction)
+        case
+        when instruction == 'subgroup'
+          fetched = get_value(field_name, instruction_data, source_data, error_array)
+          data = concat(data, fetched)
+        when instruction == 'conditional_eval'
+          fetched = conditional_eval(field_name, instruction_data, source_data, error_array)
+          data = concat(data, fetched)
+        when valid_fetcher?(instruction)
           fetched = fetcher(instruction, instruction_data, source_data)
           data = concat(data, fetched)
-        elsif valid_action?(instruction)
+        when valid_action?(instruction)
           data = action(instruction, instruction_data, data)
         else
           add_error(error_array, "Invalid operation '#{instruction_hash.inspect}' in transform for field '#{field_name}'", field_name)

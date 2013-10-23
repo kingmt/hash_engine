@@ -70,6 +70,183 @@ describe HashEngine do
 
   it 'get_value'
 
+# output_2:
+#   conditional_input:
+#     left_operand
+#       input: data_key_1
+#     operator: eq
+#     right_operand:
+#       input: data_key_4
+#     true_instructions:
+#       data:
+#         - data_key_2
+#         - data_key_3
+#       join: '#'
+#     false_instructions:
+#       data:
+#         - data_key_1
+#         - data_key_4
+#       join: '#'
+#   When data_value_1 is the same as data_value_4 the result would be => data_value_2#data_value_3
+#   When data_value_1 is not the same as data_value_4 the result would be => data_value_1#data_value_4
+  describe 'conditional_eval' do
+    let(:data) do
+      {'data_key_1' => 'data_value_1',
+       'data_key_2' => 'data_value_2',
+       'data_key_3' => 'data_value_3',
+       'data_key_4' => 'data_value_4',
+       'data_key_5' => 'data_value_5'}
+    end
+
+    context 'specified in an array' do
+      it 'handles trivial case' do
+        yaml =<<EOYAML
+fields:
+  status:
+    - conditional_eval:
+        left_operand:
+          input: data_key_1
+        operator: eq
+        right_operand:
+          input: data_key_4
+        true_instructions:
+          input: data_key_2
+        false_instructions:
+          input: data_key_3
+EOYAML
+        instructions = YAML.load yaml
+        results = HashEngine.transform(data, instructions)
+        results[:error].should == []
+        results['status'].should == 'data_value_3'
+      end
+
+      it 'handles complex operand' do
+        yaml =<<EOYAML
+fields:
+  status:
+    - conditional_eval:
+        left_operand:
+          data:
+            - data_key_2
+            - data_key_3
+          join: '#'
+        operator: eq
+        right_operand:
+          input: data_key_4
+        true_instructions:
+          input: data_key_2
+        false_instructions:
+          input: data_key_3
+EOYAML
+        instructions = YAML.load yaml
+        results = HashEngine.transform(data, instructions)
+        results[:error].should == []
+        results['status'].should == 'data_value_3'
+      end
+
+      it 'handles complex result instructions' do
+        yaml =<<EOYAML
+fields:
+  status:
+    - conditional_eval:
+        left_operand:
+          input: data_key_1
+        operator: eq
+        right_operand:
+          input: data_key_4
+        true_instructions:
+          data:
+            - data_key_2
+            - data_key_3
+          join: '#'
+        false_instructions:
+          data:
+            - data_key_1
+            - data_key_4
+          join: '#'
+EOYAML
+        instructions = YAML.load yaml
+        results = HashEngine.transform(data, instructions)
+        results[:error].should == []
+        results['status'].should == 'data_value_1#data_value_4'
+      end
+    end
+
+    context 'specified in a hash' do
+      it 'handles trivial case' do
+        yaml =<<EOYAML
+fields:
+  status:
+    conditional_eval:
+      left_operand:
+        input: data_key_1
+      operator: eq
+      right_operand:
+        input: data_key_4
+      true_instructions:
+        input: data_key_2
+      false_instructions:
+        input: data_key_3
+EOYAML
+        instructions = YAML.load yaml
+        results = HashEngine.transform(data, instructions)
+        results[:error].should == []
+        results['status'].should == 'data_value_3'
+      end
+
+      it 'handles complex operand' do
+        yaml =<<EOYAML
+fields:
+  status:
+    conditional_eval:
+      left_operand:
+        data:
+          - data_key_2
+          - data_key_3
+        join: '#'
+      operator: eq
+      right_operand:
+        input: data_key_4
+      true_instructions:
+        input: data_key_2
+      false_instructions:
+        input: data_key_3
+EOYAML
+        instructions = YAML.load yaml
+        results = HashEngine.transform(data, instructions)
+        results[:error].should == []
+        results['status'].should == 'data_value_3'
+      end
+
+      it 'handles complex result instructions' do
+        yaml =<<EOYAML
+fields:
+  status:
+    conditional_eval:
+      left_operand:
+        input: data_key_1
+      operator: eq
+      right_operand:
+        input: data_key_4
+      true_instructions:
+        data:
+          - data_key_2
+          - data_key_3
+        join: '#'
+      false_instructions:
+        data:
+          - data_key_1
+          - data_key_4
+        join: '#'
+EOYAML
+        instructions = YAML.load yaml
+        results = HashEngine.transform(data, instructions)
+        results[:error].should == []
+        results['status'].should == 'data_value_1#data_value_4'
+      end
+    end
+  end
+
   describe 'transformation' do
     before :each do
       @data = {'vendor_status' => 'ok',
