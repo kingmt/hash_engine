@@ -275,6 +275,9 @@ Input Data Type:
   * downcase = changes all characters to lower case, examples (initial, result):
   * * 'TRUE' => 'true'
 
+  * reverse = reverse the order of the characters
+  * * 'sample' => 'elpmas'
+
 
 == Adding/Removing/Changing Actions
 To add a new action using a block do:

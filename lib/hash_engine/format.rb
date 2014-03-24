@@ -47,6 +47,7 @@ module HashEngine
     @@formats['upcase'] = Proc.new {|data| data.to_s.upcase }
     @@formats['downcase'] = Proc.new {|data| data.to_s.downcase }
     @@formats['capitalize'] = Proc.new {|data| data.to_s.capitalize }
+    @@formats['reverse'] = Proc.new {|data| data.to_s.reverse }
     @@formats['date'] = Proc.new {|data| Date.parse(data) rescue data }
 
     int_lookup = Hash.new {|hash, key| hash[key] = key.to_i }
@@ -55,7 +56,7 @@ module HashEngine
     int_lookup[nil] = 0
     @@formats['integer'] = int_lookup
 
-    @@formats['boolean'] = Hash.new {|hash, key| 
+    @@formats['boolean'] = Hash.new {|hash, key|
       hash[key] = ['true', 't', 'yes', 'y', '1'].include?(key.to_s.downcase) }
   end
 end
